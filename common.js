@@ -166,10 +166,15 @@ module.exports = {
     let combinations = []
     for (let arch of selectedArchs) {
       for (let platform of selectedPlatforms) {
-        // Electron does not have 32-bit releases for Mac OS X, so skip that combination
-        if (isPlatformMac(platform) && arch === 'ia32') continue
+        if (
+          // Electron does not have 32-bit releases for Mac OS X, so skip that combination
+          (isPlatformMac(platform) && arch === 'ia32') ||
         // Electron only has armv7l releases for Linux
-        if (arch === 'armv7l' && platform !== 'linux') continue
+          (arch === 'armv7l' && platform !== 'linux')
+        ) {
+          warning(`Electron does not support the target platform ${platform} with the target architecture ${arch}, skipping`)
+          continue
+        }
         if (typeof ignoreFunc === 'function' && ignoreFunc(platform, arch)) continue
         combinations.push(createDownloadOpts(opts, platform, arch))
       }

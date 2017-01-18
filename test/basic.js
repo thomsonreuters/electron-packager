@@ -558,6 +558,19 @@ util.packagerTest('fails with invalid version', (t) => {
   })
 })
 
+util.packagerTest('fails with invalid combo', (t) => {
+  let opts = {
+    arch: 'ia32',
+    dir: path.join(__dirname, 'fixtures', 'el-0374'),
+    platform: 'darwin'
+  }
+  packager(opts, (err, paths) => {
+    t.deepEqual(paths, [], 'no paths returned')
+    t.equal(err, null, 'no error thrown')
+    t.end()
+  })
+})
+
 util.packagerTest('electronVersion overrides deprecated version', (t) => {
   const opts = {
     electronVersion: '0.1.2',
