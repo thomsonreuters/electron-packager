@@ -1,10 +1,10 @@
 {
-  "name": "electron-packager",
+  "name": "tr-electron-packager",
   "version": "10.1.0",
-  "description": "Customize and package your Electron app with OS-specific bundles (.app, .exe, etc.) via JS or CLI",
+  "description": "Customize and package your Thomson Reuters Electron app with OS-specific bundles (.app, .exe, etc.) via JS or CLI",
   "main": "index.js",
   "bin": {
-    "electron-packager": "cli.js"
+    "tr-electron-packager": "cli.js"
   },
   "repository": {
     "type": "git",
@@ -19,7 +19,7 @@
   "dependencies": {
     "asar": "^0.14.0",
     "debug": "^3.0.0",
-    "electron-download": "^4.0.0",
+    "tr-electron-download": "^4.0.0",
     "electron-osx-sign": "^0.4.1",
     "extract-zip": "^1.0.3",
     "fs-extra": "^4.0.0",

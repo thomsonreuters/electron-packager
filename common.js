@@ -1,7 +1,7 @@
 'use strict'
 
-const debug = require('debug')('electron-packager')
-const download = require('electron-download')
+const debug = require('debug')('tr-electron-packager')
+const download = require('tr-electron-download')
 const os = require('os')
 const path = require('path')
 const pify = require('pify')
@@ -167,7 +167,7 @@ module.exports = {
   subOptionWarning: subOptionWarning,
 
   baseTempDir: function baseTempDir (opts) {
-    return path.join(opts.tmpdir || os.tmpdir(), 'electron-packager')
+    return path.join(opts.tmpdir || os.tmpdir(), 'tr-electron-packager')
   },
   generateFinalBasename: generateFinalBasename,
   generateFinalPath: generateFinalPath,

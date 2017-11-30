@@ -102,7 +102,7 @@ function createIgnoreImplicitOutDirTest (opts) {
 
 test('generateIgnores ignores the generated temporary directory only on Linux', (t) => {
   const tmpdir = '/foo/bar'
-  const expected = path.join(tmpdir, 'electron-packager')
+  const expected = path.join(tmpdir, 'tr-electron-packager')
   let opts = {tmpdir}
 
   ignore.generateIgnores(opts)
@@ -134,7 +134,7 @@ util.testSinglePlatform('ignore test: Function', createIgnoreTest,
 util.testSinglePlatform('ignore test: string with slash', createIgnoreTest, 'ignore/this',
                         path.join('ignore', 'this.txt'))
 util.testSinglePlatform('ignore test: only match subfolder of app', createIgnoreTest,
-                        'electron-packager', path.join('electron-packager', 'readme.txt'))
+                        'tr-electron-packager', path.join('tr-electron-packager', 'readme.txt'))
 util.testSinglePlatform('ignore out dir test', createIgnoreOutDirTest, 'ignoredOutDir')
 util.testSinglePlatform('ignore out dir test: unnormalized path', createIgnoreOutDirTest,
                         './ignoredOutDir')

@@ -1,14 +1,14 @@
 'use strict'
 
 const common = require('./common')
-const debug = require('debug')('electron-packager')
+const debug = require('debug')('tr-electron-packager')
 const path = require('path')
 const targets = require('./targets')
 
 const DEFAULT_IGNORES = [
-  '/node_modules/electron($|/)',
-  '/node_modules/electron-prebuilt(-compile)?($|/)',
-  '/node_modules/electron-packager($|/)',
+  '/node_modules/tr-electron($|/)',
+  '/node_modules/tr-electron-prebuilt(-compile)?($|/)',
+  '/node_modules/tr-electron-packager($|/)',
   '/\\.git($|/)',
   '/node_modules/\\.bin($|/)',
   '\\.o(bj)?$'

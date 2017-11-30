@@ -2,7 +2,7 @@
 
 const App = require('./platform')
 const common = require('./common')
-const debug = require('debug')('electron-packager')
+const debug = require('debug')('tr-electron-packager')
 const fs = require('fs-extra')
 const path = require('path')
 const plist = require('plist')

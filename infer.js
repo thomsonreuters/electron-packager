@@ -1,6 +1,6 @@
 'use strict'
 
-const debug = require('debug')('electron-packager')
+const debug = require('debug')('tr-electron-packager')
 const getPackageInfo = require('get-package-info')
 const parseAuthor = require('parse-author')
 const path = require('path')
@@ -9,7 +9,7 @@ const resolve = require('resolve')
 
 function isMissingRequiredProperty (props) {
   var requiredProps = props.filter(
-    (prop) => prop === 'productName' || prop === 'dependencies.electron'
+    (prop) => prop === 'productName' || prop === 'dependencies.tr-electron'
   )
   return requiredProps.length !== 0
 }
@@ -21,7 +21,7 @@ function errorMessageForProperty (prop) {
       hash = 'name'
       propDescription = 'application name'
       break
-    case 'dependencies.electron':
+    case 'dependencies.tr-electron':
       hash = 'electronversion'
       propDescription = 'Electron version'
       break
@@ -88,8 +88,8 @@ function handleMetadata (opts, result) {
     }
   }
 
-  if (result.values['dependencies.electron']) {
-    return getVersion(opts, result.source['dependencies.electron'])
+  if (result.values['dependencies.tr-electron']) {
+    return getVersion(opts, result.source['dependencies.tr-electron'])
   } else {
     return Promise.resolve()
   }
@@ -101,12 +101,12 @@ module.exports = function getMetadataFromPackageJSON (platforms, opts, dir) {
   if (!opts.appVersion) props.push('version')
   if (!opts.electronVersion) {
     props.push([
-      'dependencies.electron',
-      'devDependencies.electron',
+      'dependencies.tr-electron',
+      'devDependencies.tr-electron',
       'dependencies.electron-prebuilt-compile',
       'devDependencies.electron-prebuilt-compile',
-      'dependencies.electron-prebuilt',
-      'devDependencies.electron-prebuilt'
+      'dependencies.tr-electron-prebuilt',
+      'devDependencies.tr-electron-prebuilt'
     ])
   }
 

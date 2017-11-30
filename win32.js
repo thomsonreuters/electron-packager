@@ -1,6 +1,6 @@
 'use strict'
 
-const debug = require('debug')('electron-packager')
+const debug = require('debug')('tr-electron-packager')
 const path = require('path')
 const pify = require('pify')
 

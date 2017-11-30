@@ -1,7 +1,7 @@
 'use strict'
 
 const common = require('./common')
-const debug = require('debug')('electron-packager')
+const debug = require('debug')('tr-electron-packager')
 const extract = require('extract-zip')
 const fs = require('fs-extra')
 const getMetadataFromPackageJSON = require('./infer')
@@ -13,7 +13,7 @@ const pify = require('pify')
 const targets = require('./targets')
 
 function debugHostInfo () {
-  debug(`Electron Packager ${metadata.version}`)
+  debug(`TR-Electron Packager ${metadata.version}`)
   debug(`Node ${process.version}`)
   debug(`Host Operating system: ${process.platform} (${process.arch})`)
 }
