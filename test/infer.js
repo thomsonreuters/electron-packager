@@ -8,7 +8,6 @@ const packager = require('..')
 const path = require('path')
 const pkgUp = require('pkg-up')
 const util = require('./util')
-const waterfall = require('run-waterfall')
 
 function createInferElectronVersionTest (fixture, packageName) {
   return (opts) => {
@@ -19,78 +18,99 @@ function createInferElectronVersionTest (fixture, packageName) {
       delete opts.electronVersion
       opts.dir = path.join(__dirname, 'fixtures', fixture)
 
-      waterfall([
-        (cb) => {
-          getMetadataFromPackageJSON(opts, opts.dir, cb)
-        }, (cb) => {
-          fs.readFile(path.join(opts.dir, 'package.json'), cb)
-        }, (pkg, cb) => {
-          const packageJSON = JSON.parse(pkg)
+      getMetadataFromPackageJSON([], opts, opts.dir)
+        .then(() => {
+          const packageJSON = require(path.join(opts.dir, 'package.json'))
           t.equal(opts.electronVersion, packageJSON.devDependencies[packageName], `The version should be inferred from installed ${packageName} version`)
-          cb()
-        }
-      ], (err) => {
-        t.end(err)
-      })
+          return t.end()
+        }).catch(t.end)
     }
   }
 }
 
-function copyFixtureToTempDir (fixtureSubdir, cb) {
+function copyFixtureToTempDir (fixtureSubdir) {
   let tmpdir = path.join(os.tmpdir(), fixtureSubdir)
   let fixtureDir = path.join(__dirname, 'fixtures', fixtureSubdir)
-  waterfall([
-    cb => {
-      let tmpdirPkg = pkgUp.sync(path.join(tmpdir, '..'))
-      if (tmpdirPkg) return cb(new Error(`Found package.json in parent of temp directory, which will interfere with test results. Please remove package.json at ${tmpdirPkg}`))
-      cb()
-    },
-    cb => fs.emptyDir(tmpdir, cb),
-    (cb1, cb2) => fs.copy(fixtureDir, tmpdir, cb2 || cb1), // inconsistent cb arguments from fs.emptyDir
-    cb => cb(null, tmpdir)
-  ], cb)
+  let tmpdirPkg = pkgUp.sync(path.join(tmpdir, '..'))
+
+  if (tmpdirPkg) {
+    throw new Error(`Found package.json in parent of temp directory, which will interfere with test results. Please remove package.json at ${tmpdirPkg}`)
+  }
+
+  return fs.emptyDir(tmpdir)
+    .then(() => fs.copy(fixtureDir, tmpdir))
+    .then(() => tmpdir)
 }
 
 function createInferFailureTest (opts, fixtureSubdir) {
-  return function (t) {
+  return (t) => {
     t.timeoutAfter(config.timeout)
 
-    copyFixtureToTempDir(fixtureSubdir, (err, dir) => {
-      if (err) return t.end(err)
+    copyFixtureToTempDir(fixtureSubdir)
+      .then((dir) => {
+        delete opts.electronVersion
+        opts.dir = dir
 
-      delete opts.electronVersion
-      opts.dir = dir
-
-      packager(opts, function (err, paths) {
-        t.ok(err, 'error thrown')
-        t.end()
-      })
-    })
+        return packager(opts)
+      }).then(
+        paths => t.end('expected error'),
+        err => {
+          t.ok(err, 'error thrown')
+          return t.end()
+        }
+      ).catch((err) => { console.error('ERROR OMG', err); t.end() })
   }
 }
 
 function createInferMissingVersionTest (opts) {
   return (t) => {
     t.timeoutAfter(config.timeout)
-    waterfall([
-      (cb) => {
-        copyFixtureToTempDir('infer-missing-version-only', cb)
-      }, (dir, cb) => {
+    copyFixtureToTempDir('infer-missing-version-only')
+      .then((dir) => {
         delete opts.electronVersion
         opts.dir = dir
 
-        getMetadataFromPackageJSON(opts, dir, cb)
-      }, (cb) => {
-        fs.readFile(path.join(opts.dir, 'package.json'), cb)
-      }, (pkg, cb) => {
-        const packageJSON = JSON.parse(pkg)
+        return getMetadataFromPackageJSON([], opts, dir)
+      }).then(() => {
+        const packageJSON = require(path.join(opts.dir, 'package.json'))
         t.equal(opts.electronVersion, packageJSON.devDependencies['electron'], 'The version should be inferred from installed electron module version')
-        cb()
-      }
-    ], (err) => {
-      t.end(err)
-    })
+        return t.end()
+      }).catch(t.end)
   }
+}
+
+function testInferWin32metadata (t, opts, expected, assertionMessage) {
+  t.timeoutAfter(config.timeout)
+  copyFixtureToTempDir('infer-win32metadata')
+    .then((dir) => {
+      opts.dir = dir
+
+      return getMetadataFromPackageJSON(['win32'], opts, dir)
+    }).then(() => {
+      t.deepEqual(opts.win32metadata, expected, assertionMessage)
+      return t.end()
+    }).catch(t.end)
+}
+
+function testInferWin32metadataAuthorObject (t, opts, author, expected, assertionMessage) {
+  let packageJSONFilename
+  t.timeoutAfter(config.timeout)
+
+  copyFixtureToTempDir('infer-win32metadata')
+    .then((dir) => {
+      opts.dir = dir
+
+      packageJSONFilename = path.join(dir, 'package.json')
+      return fs.readJson(packageJSONFilename)
+    }).then(packageJSON => {
+      packageJSON.author = author
+      return fs.writeJson(packageJSONFilename, packageJSON)
+    }).then(() => {
+      return getMetadataFromPackageJSON(['win32'], opts, opts.dir)
+    }).then(() => {
+      t.deepEqual(opts.win32metadata, expected, assertionMessage)
+      return t.end()
+    }).catch(t.end)
 }
 
 function createInferMissingFieldsTest (opts) {
@@ -113,6 +133,42 @@ util.testSinglePlatform('infer using `electron-prebuilt` package', createInferEl
 util.testSinglePlatform('infer using `electron-prebuilt-compile` package', createInferElectronVersionTest('infer-electron-prebuilt-compile', 'electron-prebuilt-compile'))
 util.testSinglePlatform('infer using `electron` package only', createInferMissingVersionTest)
 util.testSinglePlatform('infer where `electron` version is preferred over `electron-prebuilt`', createInferElectronVersionTest('basic-renamed-to-electron', 'electron'))
+util.testSinglePlatform('infer win32metadata', (opts) => {
+  return (t) => {
+    const expected = {CompanyName: 'Foo Bar'}
+
+    testInferWin32metadata(t, opts, expected, 'win32metadata matches package.json values')
+  }
+})
+util.testSinglePlatform('do not infer win32metadata if it already exists', (opts) => {
+  return (t) => {
+    opts.win32metadata = {CompanyName: 'Existing'}
+    const expected = Object.assign({}, opts.win32metadata)
+
+    testInferWin32metadata(t, opts, expected, 'win32metadata did not update with package.json values')
+  }
+})
+util.testSinglePlatform('infer win32metadata when author is an object', (opts) => {
+  return (t) => {
+    const author = {
+      name: 'Foo Bar Object',
+      email: 'foobar@example.com'
+    }
+    const expected = {CompanyName: 'Foo Bar Object'}
+
+    testInferWin32metadataAuthorObject(t, opts, author, expected, 'win32metadata did not update with package.json values')
+  }
+})
+util.testSinglePlatform('do not infer win32metadata.CompanyName when author is an object without a name', (opts) => {
+  return (t) => {
+    const author = {
+      email: 'foobar@example.com'
+    }
+    const expected = {}
+
+    testInferWin32metadataAuthorObject(t, opts, author, expected, 'win32metadata.CompanyName should not have been inferred')
+  }
+})
 util.testSinglePlatform('infer missing fields test', createInferMissingFieldsTest)
 util.testSinglePlatform('infer with bad fields test', createInferWithBadFieldsTest)
 util.testSinglePlatform('infer with malformed JSON test', createInferWithMalformedJSONTest)

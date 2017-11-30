@@ -1,12 +1,11 @@
 'use strict'
 
 const config = require('./config.json')
-const fs = require('fs')
+const fs = require('fs-extra')
 const packager = require('..')
 const path = require('path')
 const test = require('tape')
 const util = require('./util')
-const waterfall = require('run-waterfall')
 const win32 = require('../win32')
 
 const baseOpts = {
@@ -17,20 +16,30 @@ const baseOpts = {
   platform: 'win32'
 }
 
+function generateRceditOptionsSansIcon (opts) {
+  return new win32.App(opts).generateRceditOptionsSansIcon()
+}
+
 function generateVersionStringTest (metadataProperties, extraOpts, expectedValues, assertionMsgs) {
   return (t) => {
     t.timeoutAfter(config.timeout)
 
     const opts = Object.assign({}, baseOpts, extraOpts)
-    const rcOpts = win32.generateRceditOptionsSansIcon(opts)
+    const rcOpts = generateRceditOptionsSansIcon(opts)
 
     metadataProperties = [].concat(metadataProperties)
     expectedValues = [].concat(expectedValues)
     assertionMsgs = [].concat(assertionMsgs)
     metadataProperties.forEach((property, i) => {
-      var value = expectedValues[i]
-      var msg = assertionMsgs[i]
-      t.deepEqual(rcOpts[property], value, msg)
+      const value = expectedValues[i]
+      const msg = assertionMsgs[i]
+      if (property === 'version-string') {
+        for (const subkey in value) {
+          t.equal(rcOpts[property][subkey], value[subkey], `${msg} (${subkey})`)
+        }
+      } else {
+        t.equal(rcOpts[property], value, msg)
+      }
     })
     t.end()
   }
@@ -90,16 +99,47 @@ function setCopyrightAndCompanyNameTest (appCopyright, companyName) {
   )
 }
 
-function setCompanyNameTest (companyName, optName) {
-  let opts = {}
-  opts[optName] = {
-    CompanyName: companyName
+function setRequestedExecutionLevelTest (requestedExecutionLevel) {
+  var opts = {
+    win32metadata: {
+      'requested-execution-level': requestedExecutionLevel
+    }
+  }
+
+  return generateVersionStringTest(
+    'requested-execution-level',
+    opts,
+    requestedExecutionLevel,
+    'requested-execution-level in win32metadata should match rcOpts value'
+  )
+}
+
+function setApplicationManifestTest (applicationManifest) {
+  var opts = {
+    win32metadata: {
+      'application-manifest': applicationManifest
+    }
+  }
+
+  return generateVersionStringTest(
+    'application-manifest',
+    opts,
+    applicationManifest,
+    'application-manifest in win32metadata should match rcOpts value'
+  )
+}
+
+function setCompanyNameTest (companyName) {
+  const opts = {
+    win32metadata: {
+      CompanyName: companyName
+    }
   }
 
   return generateVersionStringTest('version-string',
                                    opts,
                                    {CompanyName: companyName},
-                                   `Company name should match ${optName} value`)
+                                   `Company name should match win32metadata value`)
 }
 
 test('better error message when wine is not found', (t) => {
@@ -134,28 +174,51 @@ test('error message unchanged when error not about wine', (t) => {
   t.end()
 })
 
-util.packagerTest('win32 executable name is based on sanitized app name', (t) => {
-  let opts = Object.assign({}, baseOpts, {name: '@username/package-name'})
+test('win32metadata defaults', (t) => {
+  const opts = {
+    name: 'Win32 App'
+  }
+  const rcOpts = generateRceditOptionsSansIcon(opts)
 
-  waterfall([
-    (cb) => {
-      packager(opts, cb)
-    }, (paths, cb) => {
+  t.equal(rcOpts['version-string'].FileDescription, opts.name, 'default FileDescription')
+  t.equal(rcOpts['version-string'].InternalName, opts.name, 'default InternalName')
+  t.equal(rcOpts['version-string'].OriginalFilename, 'Win32 App.exe', 'default OriginalFilename')
+  t.equal(rcOpts['version-string'].ProductName, opts.name, 'default ProductName')
+  t.end()
+})
+
+util.packagerTest('win32 executable name is based on sanitized app name', (t) => {
+  const opts = Object.assign({}, baseOpts, {name: '@username/package-name'})
+
+  packager(opts)
+    .then(paths => {
       t.equal(1, paths.length, '1 bundle created')
-      let appExePath = path.join(paths[0], '@username-package-name.exe')
-      fs.stat(appExePath, cb)
-    }, (stats, cb) => {
-      t.true(stats.isFile(), 'The sanitized EXE filename should exist')
-      cb()
-    }
-  ], (err) => {
-    t.end(err)
-  })
+      const appExePath = path.join(paths[0], '@username-package-name.exe')
+      return fs.pathExists(appExePath)
+    }).then(exists => {
+      t.true(exists, 'The sanitized EXE filename should exist')
+      return t.end()
+    }).catch(t.end)
+})
+
+util.packagerTest('win32 executable name uses executableName when available', t => {
+  const opts = Object.assign({}, baseOpts, {name: 'PackageName', executableName: 'my-package'})
+
+  packager(opts)
+    .then(paths => {
+      t.equal(1, paths.length, '1 bundle created')
+      const appExePath = path.join(paths[0], 'my-package.exe')
+      return fs.pathExists(appExePath)
+    }).then(exists => {
+      t.true(exists, 'the executableName-based filename should exist')
+      return t.end()
+    }).catch(t.end)
 })
 
 util.packagerTest('win32 build version sets FileVersion test', setFileVersionTest('2.3.4.5'))
 util.packagerTest('win32 app version sets ProductVersion test', setProductVersionTest('5.4.3.2'))
 util.packagerTest('win32 app copyright sets LegalCopyright test', setCopyrightTest('Copyright Bar'))
 util.packagerTest('win32 set LegalCopyright and CompanyName test', setCopyrightAndCompanyNameTest('Copyright Bar', 'MyCompany LLC'))
-util.packagerTest('win32 set CompanyName test (win32metadata)', setCompanyNameTest('MyCompany LLC', 'win32metadata'))
-util.packagerTest('win32 set CompanyName test (version-string)', setCompanyNameTest('MyCompany LLC', 'version-string'))
+util.packagerTest('win32 set CompanyName test', setCompanyNameTest('MyCompany LLC'))
+util.packagerTest('win32 set requested-execution-level test', setRequestedExecutionLevelTest('asInvoker'))
+util.packagerTest('win32 set application-manifest test', setApplicationManifestTest('/path/to/manifest.xml'))

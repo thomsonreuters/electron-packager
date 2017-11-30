@@ -1,9 +1,9 @@
-# electron-packager
+# Electron Packager
 
 Package your [Electron](http://electron.atom.io) app into OS-specific bundles (`.app`, `.exe`, etc.) via JavaScript or the command line.
 
 [![Travis CI Build Status](https://travis-ci.org/electron-userland/electron-packager.svg?branch=master)](https://travis-ci.org/electron-userland/electron-packager)
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/m51mlf6ntd138555?svg=true)](https://ci.appveyor.com/project/electron-userland/electron-packager)
+[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/m51mlf6ntd138555/branch/master?svg=true)](https://ci.appveyor.com/project/electron-userland/electron-packager)
 [![Coverage Status](https://coveralls.io/repos/github/electron-userland/electron-packager/badge.svg?branch=master)](https://coveralls.io/github/electron-userland/electron-packager?branch=master)
 [![Dependency Status](https://dependencyci.com/github/electron-userland/electron-packager/badge)](https://dependencyci.com/github/electron-userland/electron-packager)
 
@@ -12,7 +12,15 @@ Package your [Electron](http://electron.atom.io) app into OS-specific bundles (`
 Electron Packager is a command line tool and Node.js library that bundles Electron-based application
 source code with a renamed Electron executable and supporting files into folders ready for distribution.
 
-Note that packaged Electron applications can be relatively large. A zipped barebones OS X Electron application is around 40MB.
+For creating distributables like installers and Linux packages, consider using either [Electron
+Forge](https://github.com/electron-userland/electron-forge) (which uses Electron Packager
+internally), or one of the [related Electron tools](#distributable-creators), which utilizes
+Electron Packager-created folders as a basis.
+
+Note that packaged Electron applications can be relatively large. A zipped, minimal Electron
+application is approximately the same size as the zipped prebuilt binary for a given target
+platform, target arch, and [Electron version](https://github.com/electron/electron/releases)
+_(files named `electron-v${version}-${platform}-${arch}.zip`)_.
 
 ### Electron Packager is an [OPEN Open Source Project](http://openopensource.org/)
 
@@ -34,7 +42,7 @@ It generates executables/bundles for the following **target** platforms:
 
 * Windows (also known as `win32`, for both 32/64 bit)
 * OS X (also known as `darwin`) / [Mac App Store](http://electron.atom.io/docs/v0.36.0/tutorial/mac-app-store-submission-guide/) (also known as `mas`)<sup>*</sup>
-* Linux (for x86, x86_64, and armv7l architectures)
+* Linux (for x86, x86_64, armv7l, and arm64 architectures)
 
 <sup>*</sup> *Note for OS X / MAS target bundles: the `.app` bundle can only be signed when building on a host OS X platform.*
 
@@ -153,11 +161,37 @@ The `Foo Bar.app` folder generated can be executed by a system running OS X, whi
 
 ### [Programmatic API](https://github.com/electron-userland/electron-packager/blob/master/docs/api.md)
 
+### [Frequently Asked Questions](https://github.com/electron-userland/electron-packager/blob/master/docs/faq.md)
+
 ## Related
 
 - [Electron Forge](https://www.npmjs.com/package/electron-forge) - creates, builds, and distributes modern Electron applications
 - [electron-packager-interactive](https://github.com/Urucas/electron-packager-interactive) - an interactive CLI for electron-packager
+- [grunt-electron](https://github.com/sindresorhus/grunt-electron) - grunt plugin for electron-packager
+
+### Distributable Creators
+
+* [electron-installer-zip](https://github.com/mongodb-js/electron-installer-zip) - creates symlink-compatible ZIP files
+
+Windows:
+
+* [electron-winstaller](https://github.com/electron/windows-installer) - Squirrel.Windows-based
+  installer
+
+OS X:
+
+* [electron-installer-dmg](https://github.com/mongodb-js/electron-installer-dmg) - creates a DMG
+
+Linux:
+
+* [electron-installer-debian](https://github.com/unindented/electron-installer-debian) - creates a DEB file
+* [electron-installer-redhat](https://github.com/unindented/electron-installer-redhat) - creates an RPM
+* [electron-installer-flatpak](https://github.com/endlessm/electron-installer-flatpak) - creates a Flatpak file
+
+### Plugins
+
+These Node modules utilize Electron Packager API hooks:
+
 - [electron-packager-plugin-non-proprietary-codecs-ffmpeg](https://www.npmjs.com/package/electron-packager-plugin-non-proprietary-codecs-ffmpeg) - replaces the normal version of FFmpeg in Electron with a version without proprietary codecs
 - [electron-rebuild](https://github.com/electron/electron-rebuild) - rebuild native Node.js modules
   against the packaged Electron version
-- [grunt-electron](https://github.com/sindresorhus/grunt-electron) - grunt plugin for electron-packager

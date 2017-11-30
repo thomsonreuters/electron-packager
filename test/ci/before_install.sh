@@ -3,10 +3,14 @@
 
 case "$TRAVIS_OS_NAME" in
   "linux")
+    # Not using Trusty containers because it can't install wine1.6(-i386),
+    # see: https://github.com/travis-ci/travis-ci/issues/6460
     sudo rm /etc/apt/sources.list.d/google-chrome.list
+    sudo apt-key adv --fetch-keys http://dl.yarnpkg.com/debian/pubkey.gpg
+    echo "deb http://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
     sudo dpkg --add-architecture i386
     sudo apt-get update
-    sudo apt-get install -y wine1.6
+    sudo apt-get install -y wine1.6 yarn
     ;;
   "osx")
     # Create CA
@@ -27,5 +31,13 @@ case "$TRAVIS_OS_NAME" in
     npm install wine-darwin@1.9.17-1
     # Setup ~/.wine by running a command
     ./node_modules/.bin/wine hostname
+    # Install yarn
+    npm install -g yarn
     ;;
 esac
+
+# Force npm@5.1.0 if Node 8 (NPM ~5.0.0, ~5.3.0 have issues)
+if test "$TRAVIS_NODE_VERSION" = "8"; then
+  npm install -g npm@5.1.0
+fi
+npm install -g cnpm
